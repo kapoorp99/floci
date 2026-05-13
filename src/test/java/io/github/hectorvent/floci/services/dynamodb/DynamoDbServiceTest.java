@@ -94,7 +94,7 @@ class DynamoDbServiceTest {
                         List.of(new KeySchemaElement("userId", "HASH")),
                         List.of(new AttributeDefinition("userId", "S")),
                         5L, 5L));
-        assertEquals("InvalidParameterValue", ex.getErrorCode());
+        assertEquals("ValidationException", ex.getErrorCode());
         assertEquals(400, ex.getHttpStatus());
     }
 
@@ -193,7 +193,7 @@ class DynamoDbServiceTest {
         ObjectNode transactItem = mapper.createObjectNode();
         transactItem.set("Update", update);
 
-        assertDoesNotThrow(() -> service.transactWriteItems(List.of(transactItem), "us-east-1"));
+        assertDoesNotThrow(() -> service.transactWriteItems(List.of(transactItem), "us-east-1", null));
         assertEquals("Alice", service.getItem("Users", item("userId", "user-1")).get("email").get("S").asText());
     }
 
@@ -203,7 +203,7 @@ class DynamoDbServiceTest {
 
         AwsException ex = assertThrows(AwsException.class,
                 () -> service.describeTable(tableArn("eu-west-1", "Users")));
-        assertEquals("InvalidParameterValue", ex.getErrorCode());
+        assertEquals("ValidationException", ex.getErrorCode());
         assertEquals(400, ex.getHttpStatus());
     }
 
