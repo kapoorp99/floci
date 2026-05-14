@@ -1241,10 +1241,18 @@ public class Ec2Service {
 
     // ─── Filter matching ───────────────────────────────────────────────────────
 
+    private boolean matchesValue(String resourceValue, List<String> filterValues) {
+        String normalizedResourceValue = Objects.toString(resourceValue, "");
+        return filterValues.stream()
+                .map(filterValue -> Objects.toString(filterValue, ""))
+                .anyMatch(filterValue -> normalizedResourceValue.matches(wildcardToRegex(filterValue)));
+    }
+
     private String wildcardToRegex(String pattern) {
+        String normalizedPattern = Objects.toString(pattern, "");
         StringBuilder regex = new StringBuilder("^");
-        for (int i = 0; i < pattern.length(); i++) {
-            char c = pattern.charAt(i);
+        for (int i = 0; i < normalizedPattern.length(); i++) {
+            char c = normalizedPattern.charAt(i);
             switch (c) {
                 case '*':
                     regex.append(".*");
