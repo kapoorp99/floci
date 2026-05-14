@@ -150,7 +150,10 @@ public class EventBridgeService {
     }
 
     public void deleteEventBus(String name, String region) {
-        // Handle both name and ARN format
+        // Validate input and handle both name and ARN format
+        if (name == null || name.isBlank()) {
+            throw new AwsException("ValidationException", "EventBus name is required.", 400);
+        }
         String effectiveName = extractBusNameFromArn(name);
         if ("default".equals(effectiveName)) {
             throw new AwsException("ValidationException", "Cannot delete the default event bus.", 400);
@@ -158,7 +161,7 @@ public class EventBridgeService {
         String key = busKey(region, effectiveName);
         busStore.get(key)
                 .orElseThrow(() -> new AwsException("ResourceNotFoundException",
-                        "EventBus not found: " + name, 404));
+                        "EventBus not found: " + effectiveName, 404));
         String rulePrefix = ruleKeyPrefix(region, effectiveName);
         boolean hasRules = ruleStore.keys().stream().anyMatch(k -> k.startsWith(rulePrefix));
         if (hasRules) {
@@ -892,6 +895,7 @@ public class EventBridgeService {
 
     private static String extractBusNameFromArn(String arn) {
         // ARN format: arn:aws:events:region:account-id:event-bus/bus-name
+        if (arn == null) return null;
         if (!arn.startsWith("arn:aws:events:")) {
             return arn;
         }
