@@ -1211,6 +1211,44 @@ public class Ec2Service {
 
     // ─── Filter matching ───────────────────────────────────────────────────────
 
+    private String wildcardToRegex(String pattern) {
+        StringBuilder regex = new StringBuilder("^");
+        for (int i = 0; i < pattern.length(); i++) {
+            char c = pattern.charAt(i);
+            switch (c) {
+                case '*':
+                    regex.append(".*");
+                    break;
+                case '?':
+                    regex.append(".");
+                    break;
+                case '.':
+                case '\\':
+                case '^':
+                case '$':
+                case '+':
+                case '{':
+                case '}':
+                case '[':
+                case ']':
+                case '(':
+                case ')':
+                case '|':
+                    regex.append("\\").append(c);
+                    break;
+                default:
+                    regex.append(c);
+            }
+        }
+        regex.append("$");
+        return regex.toString();
+    }
+
+    private boolean matchesValue(List<String> patterns, String value) {
+        return patterns.stream()
+                .anyMatch(pattern -> value.matches(wildcardToRegex(pattern)));
+    }
+
     private boolean matchesFilters(Object resource, Map<String, List<String>> filters, String region) {
         if (filters == null || filters.isEmpty()) {
             return true;
@@ -1230,83 +1268,83 @@ public class Ec2Service {
             String tagKey = filterName.substring(4);
             List<Tag> resourceTags = getResourceTags(resource);
             return resourceTags.stream()
-                    .anyMatch(t -> t.getKey().equals(tagKey) && values.contains(t.getValue()));
+                    .anyMatch(t -> t.getKey().equals(tagKey) && matchesValue(values, t.getValue()));
         }
         if ("tag-key".equals(filterName)) {
             List<Tag> resourceTags = getResourceTags(resource);
-            return resourceTags.stream().anyMatch(t -> values.contains(t.getKey()));
+            return resourceTags.stream().anyMatch(t -> matchesValue(values, t.getKey()));
         }
         if ("tag-value".equals(filterName)) {
             List<Tag> resourceTags = getResourceTags(resource);
-            return resourceTags.stream().anyMatch(t -> values.contains(t.getValue()));
+            return resourceTags.stream().anyMatch(t -> matchesValue(values, t.getValue()));
         }
         // Resource-specific field filters
         if (resource instanceof Vpc vpc) {
             return switch (filterName) {
-                case "vpc-id" -> values.contains(vpc.getVpcId());
-                case "state" -> values.contains(vpc.getState());
-                case "isDefault", "is-default" -> values.contains(String.valueOf(vpc.isDefault()));
-                case "cidr" -> values.contains(vpc.getCidrBlock());
+                case "vpc-id" -> matchesValue(values, vpc.getVpcId());
+                case "state" -> matchesValue(values, vpc.getState());
+                case "isDefault", "is-default" -> matchesValue(values, String.valueOf(vpc.isDefault()));
+                case "cidr" -> matchesValue(values, vpc.getCidrBlock());
                 default -> true;
             };
         }
         if (resource instanceof Subnet subnet) {
             return switch (filterName) {
-                case "subnet-id" -> values.contains(subnet.getSubnetId());
-                case "vpc-id" -> values.contains(subnet.getVpcId());
-                case "state" -> values.contains(subnet.getState());
-                case "availabilityZone", "availability-zone" -> values.contains(subnet.getAvailabilityZone());
+                case "subnet-id" -> matchesValue(values, subnet.getSubnetId());
+                case "vpc-id" -> matchesValue(values, subnet.getVpcId());
+                case "state" -> matchesValue(values, subnet.getState());
+                case "availabilityZone", "availability-zone" -> matchesValue(values, subnet.getAvailabilityZone());
                 default -> true;
             };
         }
         if (resource instanceof SecurityGroup sg) {
             return switch (filterName) {
-                case "group-id" -> values.contains(sg.getGroupId());
-                case "group-name" -> values.contains(sg.getGroupName());
-                case "vpc-id" -> values.contains(sg.getVpcId());
+                case "group-id" -> matchesValue(values, sg.getGroupId());
+                case "group-name" -> matchesValue(values, sg.getGroupName());
+                case "vpc-id" -> matchesValue(values, sg.getVpcId());
                 default -> true;
             };
         }
         if (resource instanceof Instance inst) {
             return switch (filterName) {
-                case "instance-id" -> values.contains(inst.getInstanceId());
-                case "instance-state-name" -> values.contains(inst.getState().getName());
-                case "instance-type" -> values.contains(inst.getInstanceType());
-                case "vpc-id" -> values.contains(inst.getVpcId());
-                case "subnet-id" -> values.contains(inst.getSubnetId());
+                case "instance-id" -> matchesValue(values, inst.getInstanceId());
+                case "instance-state-name" -> matchesValue(values, inst.getState().getName());
+                case "instance-type" -> matchesValue(values, inst.getInstanceType());
+                case "vpc-id" -> matchesValue(values, inst.getVpcId());
+                case "subnet-id" -> matchesValue(values, inst.getSubnetId());
                 default -> true;
             };
         }
         if (resource instanceof InternetGateway igw) {
             return switch (filterName) {
-                case "internet-gateway-id" -> values.contains(igw.getInternetGatewayId());
+                case "internet-gateway-id" -> matchesValue(values, igw.getInternetGatewayId());
                 case "attachment.vpc-id" -> igw.getAttachments().stream()
-                        .anyMatch(a -> values.contains(a.getVpcId()));
+                        .anyMatch(a -> matchesValue(values, a.getVpcId()));
                 default -> true;
             };
         }
         if (resource instanceof RouteTable rt) {
             return switch (filterName) {
-                case "route-table-id" -> values.contains(rt.getRouteTableId());
-                case "vpc-id" -> values.contains(rt.getVpcId());
+                case "route-table-id" -> matchesValue(values, rt.getRouteTableId());
+                case "vpc-id" -> matchesValue(values, rt.getVpcId());
                 case "association.route-table-association-id" -> rt.getAssociations().stream()
-                        .anyMatch(a -> values.contains(a.getRouteTableAssociationId()));
+                        .anyMatch(a -> matchesValue(values, a.getRouteTableAssociationId()));
                 case "association.subnet-id" -> rt.getAssociations().stream()
-                        .anyMatch(a -> a.getSubnetId() != null && values.contains(a.getSubnetId()));
+                        .anyMatch(a -> a.getSubnetId() != null && matchesValue(values, a.getSubnetId()));
                 case "association.gateway-id" -> rt.getAssociations().stream()
-                        .anyMatch(a -> a.getGatewayId() != null && values.contains(a.getGatewayId()));
+                        .anyMatch(a -> a.getGatewayId() != null && matchesValue(values, a.getGatewayId()));
                 case "association.main" -> rt.getAssociations().stream()
-                        .anyMatch(a -> values.contains(String.valueOf(a.isMain())));
+                        .anyMatch(a -> matchesValue(values, String.valueOf(a.isMain())));
                 default -> true;
             };
         }
         if (resource instanceof Volume vol) {
             return switch (filterName) {
-                case "volume-id" -> values.contains(vol.getVolumeId());
-                case "status" -> values.contains(vol.getState());
-                case "volume-type" -> values.contains(vol.getVolumeType());
-                case "availability-zone" -> values.contains(vol.getAvailabilityZone());
-                case "encrypted" -> values.contains(String.valueOf(vol.isEncrypted()));
+                case "volume-id" -> matchesValue(values, vol.getVolumeId());
+                case "status" -> matchesValue(values, vol.getState());
+                case "volume-type" -> matchesValue(values, vol.getVolumeType());
+                case "availability-zone" -> matchesValue(values, vol.getAvailabilityZone());
+                case "encrypted" -> matchesValue(values, String.valueOf(vol.isEncrypted()));
                 default -> true;
             };
         }
