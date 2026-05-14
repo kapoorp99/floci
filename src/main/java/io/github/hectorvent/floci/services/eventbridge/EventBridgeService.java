@@ -150,14 +150,16 @@ public class EventBridgeService {
     }
 
     public void deleteEventBus(String name, String region) {
-        if ("default".equals(name)) {
+        // Handle both name and ARN format
+        String effectiveName = extractBusNameFromArn(name);
+        if ("default".equals(effectiveName)) {
             throw new AwsException("ValidationException", "Cannot delete the default event bus.", 400);
         }
-        String key = busKey(region, name);
+        String key = busKey(region, effectiveName);
         busStore.get(key)
                 .orElseThrow(() -> new AwsException("ResourceNotFoundException",
                         "EventBus not found: " + name, 404));
-        String rulePrefix = ruleKeyPrefix(region, name);
+        String rulePrefix = ruleKeyPrefix(region, effectiveName);
         boolean hasRules = ruleStore.keys().stream().anyMatch(k -> k.startsWith(rulePrefix));
         if (hasRules) {
             throw new AwsException("ValidationException",
@@ -168,13 +170,14 @@ public class EventBridgeService {
     }
 
     public EventBus describeEventBus(String name, String region) {
-        String effectiveName = name == null || name.isBlank() ? "default" : name;
+        // Handle both name and ARN format
+        String effectiveName = (name == null || name.isBlank()) ? "default" : extractBusNameFromArn(name);
         if ("default".equals(effectiveName)) {
             return getOrCreateDefaultBus(region);
         }
         return busStore.get(busKey(region, effectiveName))
                 .orElseThrow(() -> new AwsException("ResourceNotFoundException",
-                        "EventBus not found: " + effectiveName, 404));
+                        "EventBus not found: " + name, 404));
     }
 
     public List<EventBus> listEventBuses(String namePrefix, String region) {
@@ -877,7 +880,27 @@ public class EventBridgeService {
     }
 
     private static String resolvedBusName(String busName) {
-        return (busName == null || busName.isBlank()) ? "default" : busName;
+        if (busName == null || busName.isBlank()) {
+            return "default";
+        }
+        // Handle ARN format: arn:aws:events:region:account-id:event-bus/bus-name
+        if (busName.startsWith("arn:aws:events:")) {
+            return extractBusNameFromArn(busName);
+        }
+        return busName;
+    }
+
+    private static String extractBusNameFromArn(String arn) {
+        // ARN format: arn:aws:events:region:account-id:event-bus/bus-name
+        if (!arn.startsWith("arn:aws:events:")) {
+            return arn;
+        }
+        String prefix = "event-bus/";
+        int prefixIndex = arn.indexOf(prefix);
+        if (prefixIndex != -1) {
+            return arn.substring(prefixIndex + prefix.length());
+        }
+        return arn;
     }
 
     private static String busKey(String region, String name) {
