@@ -1,6 +1,7 @@
 package com.floci.test;
 
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import software.amazon.awssdk.services.apigateway.ApiGatewayClient;
 import software.amazon.awssdk.services.apigateway.model.GetAccountRequest;
 import software.amazon.awssdk.services.apigateway.model.GetAccountResponse;
