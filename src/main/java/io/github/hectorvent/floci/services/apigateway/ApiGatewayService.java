@@ -102,15 +102,21 @@ public class ApiGatewayService {
 
     public Account getAccount(String region) {
         String key = accountKey(region);
-        return accountStore.get(key).orElseGet(() -> {
-            Account account = new Account();
-            accountStore.put(key, account);
-            return account;
-        });
+        // GET must be read-only: return default account without persisting.
+        return accountStore.get(key).orElse(new Account());
     }
 
     public Account updateAccount(String region, List<Map<String, String>> patchOperations) {
-        Account account = getAccount(region);
+        Account existing = getAccount(region);
+
+        // Work on a defensive copy so updates are atomic: validate/apply all
+        // operations first and only persist after success.
+        Account copy = new Account();
+        copy.setApiKeyVersion(existing.getApiKeyVersion());
+        copy.setCloudwatchRoleArn(existing.getCloudwatchRoleArn());
+        copy.setFeatures(existing.getFeatures() == null ? null : List.copyOf(existing.getFeatures()));
+        // ThrottleSettings are immutable for our purposes here — reuse existing instance.
+        copy.setThrottleSettings(existing.getThrottleSettings());
 
         if (patchOperations != null) {
             for (Map<String, String> op : patchOperations) {
@@ -126,9 +132,9 @@ public class ApiGatewayService {
                 switch (path) {
                     case "/cloudwatchRoleArn" -> {
                         if ("remove".equals(opType)) {
-                            account.setCloudwatchRoleArn(null);
+                            copy.setCloudwatchRoleArn(null);
                         } else {
-                            account.setCloudwatchRoleArn(value);
+                            copy.setCloudwatchRoleArn(value);
                         }
                     }
                     default -> {
@@ -143,8 +149,8 @@ public class ApiGatewayService {
             }
         }
 
-        accountStore.put(accountKey(region), account);
-        return account;
+        accountStore.put(accountKey(region), copy);
+        return copy;
     }
 
     // ──────────────────────────── REST API CRUD ────────────────────────────
