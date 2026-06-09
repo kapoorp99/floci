@@ -1140,7 +1140,7 @@ public class SesController {
         if (v1Status == null) return null;
         return switch (v1Status) {
             case "Success" -> "SUCCESS";
-            case "NotStarted" -> "PENDING";
+            case "NotStarted" -> "NOT_STARTED";
             case "Pending" -> "PENDING";
             case "Failed" -> "FAILED";
             case "TemporaryFailure" -> "TEMPORARY_FAILURE";
