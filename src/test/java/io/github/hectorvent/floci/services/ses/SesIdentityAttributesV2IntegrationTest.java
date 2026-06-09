@@ -34,6 +34,18 @@ class SesIdentityAttributesV2IntegrationTest {
 
     @Test
     @Order(2)
+    void getEmailIdentity_noMailFromConfigured_omitsMailFromAttributes() {
+        given()
+            .header("Authorization", AUTH_HEADER)
+        .when()
+            .get("/v2/email/identities/v2-attrs.floci.test")
+        .then()
+            .statusCode(200)
+            .body("MailFromAttributes", equalTo(null));
+    }
+
+    @Test
+    @Order(3)
     void putEmailIdentityMailFromAttributes_setsDomain() {
         given()
             .contentType("application/json")
@@ -51,7 +63,7 @@ class SesIdentityAttributesV2IntegrationTest {
     }
 
     @Test
-    @Order(3)
+    @Order(4)
     void getEmailIdentity_includesMailFromAttributes() {
         given()
             .header("Authorization", AUTH_HEADER)
@@ -65,7 +77,7 @@ class SesIdentityAttributesV2IntegrationTest {
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     void putEmailIdentityMailFromAttributes_emptyDomain_clears() {
         given()
             .contentType("application/json")
@@ -84,12 +96,11 @@ class SesIdentityAttributesV2IntegrationTest {
             .get("/v2/email/identities/v2-attrs.floci.test")
         .then()
             .statusCode(200)
-            .body("MailFromAttributes.MailFromDomain", equalTo(""))
-            .body("MailFromAttributes.MailFromDomainStatus", equalTo("NOT_STARTED"));
+            .body("MailFromAttributes", equalTo(null));
     }
 
     @Test
-    @Order(5)
+    @Order(6)
     void putEmailIdentityMailFromAttributes_unknownIdentity_returnsBadRequest() {
         given()
             .contentType("application/json")
@@ -106,7 +117,7 @@ class SesIdentityAttributesV2IntegrationTest {
     }
 
     @Test
-    @Order(11)
+    @Order(12)
     void putEmailIdentityFeedbackAttributes_unknownIdentity_returnsBadRequest() {
         given()
             .contentType("application/json")
@@ -124,7 +135,7 @@ class SesIdentityAttributesV2IntegrationTest {
     }
 
     @Test
-    @Order(6)
+    @Order(7)
     void putEmailIdentityMailFromAttributes_invalidJson_returns400() {
         given()
             .contentType("application/json")
@@ -138,7 +149,7 @@ class SesIdentityAttributesV2IntegrationTest {
     }
 
     @Test
-    @Order(7)
+    @Order(8)
     void putEmailIdentityMailFromAttributes_missingBody_returns400() {
         given()
             .contentType("application/json")
@@ -151,7 +162,7 @@ class SesIdentityAttributesV2IntegrationTest {
     }
 
     @Test
-    @Order(8)
+    @Order(9)
     void putEmailIdentityMailFromAttributes_missingMailFromDomainField_returns400() {
         given()
             .contentType("application/json")
@@ -167,7 +178,7 @@ class SesIdentityAttributesV2IntegrationTest {
     }
 
     @Test
-    @Order(9)
+    @Order(10)
     void putEmailIdentityMailFromAttributes_mailFromDomainAsObject_returns400() {
         given()
             .contentType("application/json")
@@ -183,7 +194,7 @@ class SesIdentityAttributesV2IntegrationTest {
     }
 
     @Test
-    @Order(10)
+    @Order(11)
     void putEmailIdentityMailFromAttributes_unknownBehavior_returns400() {
         given()
             .contentType("application/json")
