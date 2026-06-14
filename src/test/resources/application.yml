@@ -63,7 +63,7 @@ floci:
     sqs:
       enabled: true
       default-visibility-timeout: 30
-      max-message-size: 262144
+      max-message-size: 1048576
     s3:
       enabled: true
       default-presign-expiry-seconds: 3600
