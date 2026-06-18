@@ -38,6 +38,8 @@ floci:
         flush-interval-ms: 60000
       batch:
         flush-interval-ms: 60000
+      s3vectors:
+        flush-interval-ms: 60000
       cloudfront:
 
   auth:
@@ -220,3 +222,6 @@ floci:
       enabled: true
     appsync:
       enabled: true
+    s3vectors:
+      enabled: true
+

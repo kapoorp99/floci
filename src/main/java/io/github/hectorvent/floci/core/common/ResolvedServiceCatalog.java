@@ -320,7 +320,12 @@ public class ResolvedServiceCatalog {
                         "appsync", storageMode(config.storage().services().appsync().mode(), config.storage().mode()),
                         config.storage().services().appsync().flushIntervalMs(), null, ServiceProtocol.REST_JSON,
                         protocols(ServiceProtocol.REST_JSON),
-                        Set.of(), Set.of("appsync"), Set.of(), Set.of(AppSyncController.class))
+                        Set.of(), Set.of("appsync"), Set.of(), Set.of(AppSyncController.class)),
+                descriptor("s3vectors", "s3vectors", config.services().s3vectors().enabled(), true,
+                        "s3vectors", storageMode(config.storage().services().s3vectors().mode(), config.storage().mode()),
+                        config.storage().services().s3vectors().flushIntervalMs(), null, ServiceProtocol.JSON,
+                        protocols(ServiceProtocol.JSON),
+                        Set.of("S3Vectors."), Set.of("s3vectors"), Set.of(), Set.of())
         ));
     }
 

@@ -174,6 +174,7 @@ public interface EmulatorConfig {
         CloudFrontStorageConfig cloudfront();
         AppSyncStorageConfig appsync();
         BatchStorageConfig batch();
+        S3VectorsStorageConfig s3vectors();
     }
 
     interface SsmStorageConfig {
@@ -305,6 +306,13 @@ public interface EmulatorConfig {
         long flushIntervalMs();
     }
 
+    interface S3VectorsStorageConfig {
+        Optional<String> mode();
+
+        @WithDefault("5000")
+        long flushIntervalMs();
+    }
+
     interface WalConfig {
         @WithDefault("30000")
         long compactionIntervalMs();
@@ -386,9 +394,15 @@ public interface EmulatorConfig {
         AppSyncServiceConfig appsync();
         BatchServiceConfig batch();
         UiServiceConfig ui();
+        S3VectorsServiceConfig s3vectors();
     }
 
     interface CloudTrailServiceConfig {
+        @WithDefault("true")
+        boolean enabled();
+    }
+
+    interface S3VectorsServiceConfig {
         @WithDefault("true")
         boolean enabled();
     }

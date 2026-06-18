@@ -32,6 +32,7 @@ import io.github.hectorvent.floci.services.kms.KmsJsonHandler;
 import io.github.hectorvent.floci.services.secretsmanager.SecretsManagerJsonHandler;
 import io.github.hectorvent.floci.services.ssm.Ec2MessagesJsonHandler;
 import io.github.hectorvent.floci.services.ssm.SsmJsonHandler;
+import io.github.hectorvent.floci.services.s3vectors.S3VectorsJsonHandler;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
@@ -86,6 +87,7 @@ public class AwsJson11Controller {
     private final BcmDataExportsJsonHandler bcmDataExportsJsonHandler;
     private final ConfigServiceJsonHandler configServiceJsonHandler;
     private final CloudTrailJsonHandler cloudTrailJsonHandler;
+    private final S3VectorsJsonHandler s3vectorsJsonHandler;
 
     @Inject
     public AwsJson11Controller(ObjectMapper objectMapper, ResolvedServiceCatalog catalog,
@@ -115,7 +117,8 @@ public class AwsJson11Controller {
                                CurJsonHandler curJsonHandler,
                                BcmDataExportsJsonHandler bcmDataExportsJsonHandler,
                                ConfigServiceJsonHandler configServiceJsonHandler,
-                               CloudTrailJsonHandler cloudTrailJsonHandler) {
+                               CloudTrailJsonHandler cloudTrailJsonHandler,
+                               S3VectorsJsonHandler s3vectorsJsonHandler) {
         this.objectMapper = objectMapper;
         this.catalog = catalog;
         this.regionResolver = regionResolver;
@@ -149,6 +152,7 @@ public class AwsJson11Controller {
         this.bcmDataExportsJsonHandler = bcmDataExportsJsonHandler;
         this.configServiceJsonHandler = configServiceJsonHandler;
         this.cloudTrailJsonHandler = cloudTrailJsonHandler;
+        this.s3vectorsJsonHandler = s3vectorsJsonHandler;
     }
 
     @POST
@@ -207,6 +211,7 @@ public class AwsJson11Controller {
                 case "bcm-data-exports" -> bcmDataExportsJsonHandler.handle(action, request, region);
                 case "config" -> configServiceJsonHandler.handle(action, request, region);
                 case "cloudtrail" -> cloudTrailJsonHandler.handle(action, request, region);
+                case "s3vectors" -> s3vectorsJsonHandler.handle(action, request, region);
                 default -> null;
             };
             // catalog.matchTarget is protocol-agnostic: a JSON 1.0 target
