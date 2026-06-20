@@ -17,7 +17,7 @@ import static org.hamcrest.Matchers.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class S3VectorsIntegrationTest {
 
-    private static final String S3V_CONTENT_TYPE = "application/x-amz-json-1.1";
+    private static final String JSON_CONTENT_TYPE = "application/json";
     private static final String BUCKET_NAME = "my-vector-bucket";
     private static final String INDEX_NAME = "my-vector-index";
 
@@ -30,141 +30,135 @@ class S3VectorsIntegrationTest {
     @Order(1)
     void createVectorBucket() {
         given()
-            .header("X-Amz-Target", "S3Vectors.CreateVectorBucket")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("""
                 {
-                    "VectorBucketName": "%s"
+                    "vectorBucketName": "%s"
                 }
                 """.formatted(BUCKET_NAME))
         .when()
-            .post("/")
+            .post("/CreateVectorBucket")
         .then()
             .statusCode(200)
-            .body("VectorBucket.VectorBucketName", equalTo(BUCKET_NAME))
-            .body("VectorBucket.VectorBucketArn", containsString("arn:aws:s3vectors:"));
+            .body("vectorBucketArn", containsString("arn:aws:s3vectors:"));
     }
 
     @Test
     @Order(2)
     void getVectorBucket() {
         given()
-            .header("X-Amz-Target", "S3Vectors.GetVectorBucket")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("""
                 {
-                    "VectorBucketName": "%s"
+                    "vectorBucketName": "%s"
                 }
                 """.formatted(BUCKET_NAME))
         .when()
-            .post("/")
+            .post("/GetVectorBucket")
         .then()
             .statusCode(200)
-            .body("VectorBucket.VectorBucketName", equalTo(BUCKET_NAME));
+            .body("vectorBucket.vectorBucketName", equalTo(BUCKET_NAME))
+            .body("vectorBucket.vectorBucketArn", containsString("arn:aws:s3vectors:"));
     }
 
     @Test
     @Order(3)
     void listVectorBuckets() {
         given()
-            .header("X-Amz-Target", "S3Vectors.ListVectorBuckets")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("{}")
         .when()
-            .post("/")
+            .post("/ListVectorBuckets")
         .then()
             .statusCode(200)
-            .body("VectorBuckets", notNullValue())
-            .body("VectorBuckets.size()", greaterThanOrEqualTo(1));
+            .body("vectorBuckets", notNullValue())
+            .body("vectorBuckets.size()", greaterThanOrEqualTo(1));
     }
 
     @Test
     @Order(4)
     void createIndex() {
         given()
-            .header("X-Amz-Target", "S3Vectors.CreateIndex")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("""
                 {
-                    "VectorBucketName": "%s",
-                    "IndexName": "%s",
-                    "Dimension": 3,
-                    "DistanceMetric": "COSINE"
+                    "vectorBucketName": "%s",
+                    "indexName": "%s",
+                    "dimension": 3,
+                    "distanceMetric": "cosine",
+                    "dataType": "float32"
                 }
                 """.formatted(BUCKET_NAME, INDEX_NAME))
         .when()
-            .post("/")
+            .post("/CreateIndex")
         .then()
             .statusCode(200)
-            .body("Index.IndexName", equalTo(INDEX_NAME))
-            .body("Index.Dimension", equalTo(3))
-            .body("Index.DistanceMetric", equalTo("COSINE"));
+            .body("indexArn", containsString("arn:aws:s3vectors:"));
     }
 
     @Test
     @Order(5)
     void getIndex() {
         given()
-            .header("X-Amz-Target", "S3Vectors.GetIndex")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("""
                 {
-                    "VectorBucketName": "%s",
-                    "IndexName": "%s"
+                    "vectorBucketName": "%s",
+                    "indexName": "%s"
                 }
                 """.formatted(BUCKET_NAME, INDEX_NAME))
         .when()
-            .post("/")
+            .post("/GetIndex")
         .then()
             .statusCode(200)
-            .body("Index.IndexName", equalTo(INDEX_NAME));
+            .body("index.indexName", equalTo(INDEX_NAME))
+            .body("index.dimension", equalTo(3))
+            .body("index.distanceMetric", equalTo("cosine"));
     }
 
     @Test
     @Order(6)
     void listIndexes() {
         given()
-            .header("X-Amz-Target", "S3Vectors.ListIndexes")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("""
                 {
-                    "VectorBucketName": "%s"
+                    "vectorBucketName": "%s"
                 }
                 """.formatted(BUCKET_NAME))
         .when()
-            .post("/")
+            .post("/ListIndexes")
         .then()
             .statusCode(200)
-            .body("Indexes", notNullValue())
-            .body("Indexes.size()", greaterThanOrEqualTo(1));
+            .body("indexes", notNullValue())
+            .body("indexes.size()", greaterThanOrEqualTo(1));
     }
 
     @Test
     @Order(7)
     void putVectors() {
         given()
-            .header("X-Amz-Target", "S3Vectors.PutVectors")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("""
                 {
-                    "VectorBucketName": "%s",
-                    "IndexName": "%s",
-                    "Vectors": [
+                    "vectorBucketName": "%s",
+                    "indexName": "%s",
+                    "vectors": [
                         {
-                            "Key": "v1",
-                            "Data": {
-                                "Float32": [1.0, 0.0, 0.0]
+                            "key": "v1",
+                            "data": {
+                                "float32": [1.0, 0.0, 0.0]
                             },
-                            "Metadata": {
+                            "metadata": {
                                 "label": "first"
                             }
                         },
                         {
-                            "Key": "v2",
-                            "Data": {
-                                "Float32": [0.0, 1.0, 0.0]
+                            "key": "v2",
+                            "data": {
+                                "float32": [0.0, 1.0, 0.0]
                             },
-                            "Metadata": {
+                            "metadata": {
                                 "label": "second"
                             }
                         }
@@ -172,7 +166,7 @@ class S3VectorsIntegrationTest {
                 }
                 """.formatted(BUCKET_NAME, INDEX_NAME))
         .when()
-            .post("/")
+            .post("/PutVectors")
         .then()
             .statusCode(200);
     }
@@ -181,114 +175,113 @@ class S3VectorsIntegrationTest {
     @Order(8)
     void getVectors() {
         given()
-            .header("X-Amz-Target", "S3Vectors.GetVectors")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("""
                 {
-                    "VectorBucketName": "%s",
-                    "IndexName": "%s",
-                    "Keys": ["v1", "v2"]
+                    "vectorBucketName": "%s",
+                    "indexName": "%s",
+                    "keys": ["v1", "v2"],
+                    "returnData": true,
+                    "returnMetadata": true
                 }
                 """.formatted(BUCKET_NAME, INDEX_NAME))
         .when()
-            .post("/")
+            .post("/GetVectors")
         .then()
             .statusCode(200)
-            .body("Vectors", hasSize(2))
-            .body("Vectors.find { it.Key == 'v1' }.Data.Float32", contains(1.0f, 0.0f, 0.0f))
-            .body("Vectors.find { it.Key == 'v2' }.Metadata.label", equalTo("second"));
+            .body("vectors", hasSize(2))
+            .body("vectors.find { it.key == 'v1' }.data.float32", contains(1.0f, 0.0f, 0.0f))
+            .body("vectors.find { it.key == 'v2' }.metadata.label", equalTo("second"));
     }
 
     @Test
     @Order(9)
     void queryVectorsCosine() {
         given()
-            .header("X-Amz-Target", "S3Vectors.QueryVectors")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("""
                 {
-                    "VectorBucketName": "%s",
-                    "IndexName": "%s",
-                    "Vector": {
-                        "Float32": [1.0, 0.1, 0.0]
+                    "vectorBucketName": "%s",
+                    "indexName": "%s",
+                    "queryVector": {
+                        "float32": [1.0, 0.1, 0.0]
                     },
-                    "TopK": 1
+                    "topK": 1,
+                    "returnMetadata": true
                 }
                 """.formatted(BUCKET_NAME, INDEX_NAME))
         .when()
-            .post("/")
+            .post("/QueryVectors")
         .then()
             .statusCode(200)
-            .body("Vectors", hasSize(1))
-            .body("Vectors[0].Key", equalTo("v1"))
-            .body("Vectors[0].Distance", notNullValue());
+            .body("vectors", hasSize(1))
+            .body("vectors[0].key", equalTo("v1"))
+            .body("vectors[0].distance", notNullValue())
+            .body("vectors[0].metadata.label", equalTo("first"));
     }
 
     @Test
     @Order(10)
     void deleteVectors() {
         given()
-            .header("X-Amz-Target", "S3Vectors.DeleteVectors")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("""
                 {
-                    "VectorBucketName": "%s",
-                    "IndexName": "%s",
-                    "Keys": ["v1"]
+                    "vectorBucketName": "%s",
+                    "indexName": "%s",
+                    "keys": ["v1"]
                 }
                 """.formatted(BUCKET_NAME, INDEX_NAME))
         .when()
-            .post("/")
+            .post("/DeleteVectors")
         .then()
             .statusCode(200);
 
         // Verify key is gone
         given()
-            .header("X-Amz-Target", "S3Vectors.GetVectors")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("""
                 {
-                    "VectorBucketName": "%s",
-                    "IndexName": "%s",
-                    "Keys": ["v1"]
+                    "vectorBucketName": "%s",
+                    "indexName": "%s",
+                    "keys": ["v1"],
+                    "returnData": true
                 }
                 """.formatted(BUCKET_NAME, INDEX_NAME))
         .when()
-            .post("/")
+            .post("/GetVectors")
         .then()
             .statusCode(200)
-            .body("Vectors", hasSize(0));
+            .body("vectors", hasSize(0));
     }
 
     @Test
     @Order(11)
     void deleteIndex() {
         given()
-            .header("X-Amz-Target", "S3Vectors.DeleteIndex")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("""
                 {
-                    "VectorBucketName": "%s",
-                    "IndexName": "%s"
+                    "vectorBucketName": "%s",
+                    "indexName": "%s"
                 }
                 """.formatted(BUCKET_NAME, INDEX_NAME))
         .when()
-            .post("/")
+            .post("/DeleteIndex")
         .then()
             .statusCode(200);
 
         // Verify index is gone
         given()
-            .header("X-Amz-Target", "S3Vectors.GetIndex")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("""
                 {
-                    "VectorBucketName": "%s",
-                    "IndexName": "%s"
+                    "vectorBucketName": "%s",
+                    "indexName": "%s"
                 }
                 """.formatted(BUCKET_NAME, INDEX_NAME))
         .when()
-            .post("/")
+            .post("/GetIndex")
         .then()
             .statusCode(404);
     }
@@ -297,29 +290,27 @@ class S3VectorsIntegrationTest {
     @Order(12)
     void deleteVectorBucket() {
         given()
-            .header("X-Amz-Target", "S3Vectors.DeleteVectorBucket")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("""
                 {
-                    "VectorBucketName": "%s"
+                    "vectorBucketName": "%s"
                 }
                 """.formatted(BUCKET_NAME))
         .when()
-            .post("/")
+            .post("/DeleteVectorBucket")
         .then()
             .statusCode(200);
 
         // Verify bucket is gone
         given()
-            .header("X-Amz-Target", "S3Vectors.GetVectorBucket")
-            .contentType(S3V_CONTENT_TYPE)
+            .contentType(JSON_CONTENT_TYPE)
             .body("""
                 {
-                    "VectorBucketName": "%s"
+                    "vectorBucketName": "%s"
                 }
                 """.formatted(BUCKET_NAME))
         .when()
-            .post("/")
+            .post("/GetVectorBucket")
         .then()
             .statusCode(404);
     }

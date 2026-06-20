@@ -36,7 +36,7 @@ public class S3VectorsService {
     }
 
     private String buildBucketArn(String region, String bucketName) {
-        return AwsArnUtils.Arn.of("s3vectors", region, regionResolver.getAccountId(), bucketName).toString();
+        return AwsArnUtils.Arn.of("s3vectors", region, regionResolver.getAccountId(), "bucket/" + bucketName).toString();
     }
 
     private String buildIndexArn(String region, String bucketName, String indexName) {
@@ -46,7 +46,7 @@ public class S3VectorsService {
     public VectorBucket createVectorBucket(String bucketName, Object encryptionConfiguration, String region) {
         String key = buildStorageKey(region, bucketName);
         if (store.get(key).isPresent()) {
-            throw new AwsException("VectorBucketAlreadyExists", "The vector bucket " + bucketName + " already exists.", 400);
+            throw new AwsException("ConflictException", "The vector bucket " + bucketName + " already exists.", 409);
         }
         String arn = buildBucketArn(region, bucketName);
         VectorBucket bucket = new VectorBucket(bucketName, arn, encryptionConfiguration);
@@ -58,7 +58,7 @@ public class S3VectorsService {
     public VectorBucket getVectorBucket(String bucketName, String region) {
         String key = buildStorageKey(region, bucketName);
         return store.get(key).orElseThrow(() ->
-                new AwsException("VectorBucketNotFound", "The vector bucket " + bucketName + " does not exist.", 404));
+                new AwsException("NotFoundException", "The vector bucket " + bucketName + " does not exist.", 404));
     }
 
     public List<VectorBucket> listVectorBuckets(String region) {
@@ -70,10 +70,10 @@ public class S3VectorsService {
     public void deleteVectorBucket(String bucketName, String region) {
         String key = buildStorageKey(region, bucketName);
         VectorBucket bucket = store.get(key).orElseThrow(() ->
-                new AwsException("VectorBucketNotFound", "The vector bucket " + bucketName + " does not exist.", 404));
+                new AwsException("NotFoundException", "The vector bucket " + bucketName + " does not exist.", 404));
 
         if (!bucket.getIndexes().isEmpty()) {
-            throw new AwsException("VectorBucketNotEmpty", "The vector bucket " + bucketName + " is not empty.", 400);
+            throw new AwsException("ConflictException", "The vector bucket " + bucketName + " is not empty.", 409);
         }
         store.delete(key);
         LOG.infov("Deleted Vector Bucket: {0}", bucketName);
@@ -81,9 +81,16 @@ public class S3VectorsService {
 
     public VectorIndex createIndex(String bucketName, String indexName, int dimension, String dataType,
                                    String distanceMetric, List<String> nonFilterableMetadataKeys, String region) {
+        if (!"float32".equals(dataType)) {
+            throw new AwsException("ValidationException", "Unsupported dataType: " + dataType + ". Only float32 is supported.", 400);
+        }
+        if (!"cosine".equals(distanceMetric) && !"euclidean".equals(distanceMetric)) {
+            throw new AwsException("ValidationException", "Unsupported distanceMetric: " + distanceMetric + ". Supported metrics are cosine and euclidean.", 400);
+        }
+
         VectorBucket bucket = getVectorBucket(bucketName, region);
         if (bucket.getIndexes().containsKey(indexName)) {
-            throw new AwsException("IndexAlreadyExists", "The index " + indexName + " already exists.", 400);
+            throw new AwsException("ConflictException", "The index " + indexName + " already exists.", 409);
         }
 
         String arn = buildIndexArn(region, bucketName, indexName);
@@ -98,7 +105,7 @@ public class S3VectorsService {
         VectorBucket bucket = getVectorBucket(bucketName, region);
         VectorIndex index = bucket.getIndexes().get(indexName);
         if (index == null) {
-            throw new AwsException("IndexNotFound", "The index " + indexName + " does not exist in bucket " + bucketName + ".", 404);
+            throw new AwsException("NotFoundException", "The index " + indexName + " does not exist in bucket " + bucketName + ".", 404);
         }
         return index;
     }
@@ -113,7 +120,7 @@ public class S3VectorsService {
     public void deleteIndex(String bucketName, String indexName, String region) {
         VectorBucket bucket = getVectorBucket(bucketName, region);
         if (!bucket.getIndexes().containsKey(indexName)) {
-            throw new AwsException("IndexNotFound", "The index " + indexName + " does not exist.", 404);
+            throw new AwsException("NotFoundException", "The index " + indexName + " does not exist.", 404);
         }
         bucket.getIndexes().remove(indexName);
         store.put(buildStorageKey(region, bucketName), bucket);
@@ -126,7 +133,7 @@ public class S3VectorsService {
 
         for (VectorData v : vectors) {
             if (v.getData() != null && v.getData().size() != index.getDimension()) {
-                throw new AwsException("VectorWrongDimension",
+                throw new AwsException("ValidationException",
                         "Vector dimension " + v.getData().size() + " does not match index dimension " + index.getDimension(), 400);
             }
             index.getVectors().put(v.getKey(), v);
@@ -160,23 +167,20 @@ public class S3VectorsService {
     public List<QueryResult> queryVectors(String bucketName, String indexName, List<Float> queryVector, int topK, String region) {
         VectorIndex index = getIndex(bucketName, indexName, region);
         if (queryVector.size() != index.getDimension()) {
-            throw new AwsException("VectorWrongDimension",
+            throw new AwsException("ValidationException",
                     "Query vector dimension " + queryVector.size() + " does not match index dimension " + index.getDimension(), 400);
         }
 
-        String metric = index.getDistanceMetric() != null ? index.getDistanceMetric().toUpperCase() : "COSINE";
+        String metric = index.getDistanceMetric() != null ? index.getDistanceMetric().toLowerCase() : "cosine";
         List<QueryResult> results = new ArrayList<>();
 
         for (VectorData v : index.getVectors().values()) {
             double distance = 0.0;
             switch (metric) {
-                case "EUCLIDEAN":
+                case "euclidean":
                     distance = calculateEuclideanDistance(queryVector, v.getData());
                     break;
-                case "DOT_PRODUCT":
-                    distance = calculateDotProduct(queryVector, v.getData());
-                    break;
-                case "COSINE":
+                case "cosine":
                 default:
                     distance = calculateCosineSimilarity(queryVector, v.getData());
                     break;
@@ -186,8 +190,8 @@ public class S3VectorsService {
 
         // Sorting:
         // For Euclidean distance, smaller distance is closer (ascending)
-        // For Dot Product & Cosine similarity, larger score is closer (descending)
-        if ("EUCLIDEAN".equals(metric)) {
+        // For Cosine similarity, larger score is closer (descending)
+        if ("euclidean".equals(metric)) {
             results.sort(Comparator.comparingDouble(QueryResult::getDistance));
         } else {
             results.sort((r1, r2) -> Double.compare(r2.getDistance(), r1.getDistance()));
