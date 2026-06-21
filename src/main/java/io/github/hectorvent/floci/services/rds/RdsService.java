@@ -147,6 +147,10 @@ public class RdsService {
         restoreInstances();
     }
 
+    public void clear() {
+        usedPorts.clear();
+    }
+
     // ── DB Instances ──────────────────────────────────────────────────────────
 
     public DbInstance createDbInstance(String id, String engineParam, String engineVersion,

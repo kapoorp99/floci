@@ -23,6 +23,11 @@ public class TranscribeService {
     private final ConcurrentHashMap<String, TranscriptionJob> transcriptionJobs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, VocabularyInfo> vocabularies = new ConcurrentHashMap<>();
 
+    public void clear() {
+        transcriptionJobs.clear();
+        vocabularies.clear();
+    }
+
     public TranscriptionJob startTranscriptionJob(String jobName, String mediaFileUri,
                                                   String languageCode, String mediaFormat) {
         requireNonBlank(jobName, "TranscriptionJobName");

@@ -238,6 +238,15 @@ public class LambdaConcurrencyLimiter {
         }
     }
 
+    public void clear() {
+        synchronized (reservedLock) {
+            inflight.clear();
+            reservedByRegion.clear();
+            regionReservedTotal.clear();
+            unreservedByRegion.clear();
+        }
+    }
+
     public int totalReserved(String region) {
         return regionTotal(region).get();
     }

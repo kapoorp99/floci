@@ -128,6 +128,17 @@ public class SqsService {
         loadPersistedDedup();
     }
 
+    public void clear() {
+        messagesByQueue.values().forEach(GuardedMessageQueue::close);
+        messagesByQueue.clear();
+        queueLocks.clear();
+        redrivePolicyCache.clear();
+        deduplicationCache.clear();
+        moveTaskCancellation.values().forEach(flag -> flag.set(true));
+        moveTaskCancellation.clear();
+        moveTasksByHandle.clear();
+    }
+
     private void loadPersistedMessages() {
         if (messageStore == null) {
             return;

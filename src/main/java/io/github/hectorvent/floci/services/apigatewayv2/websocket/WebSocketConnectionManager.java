@@ -46,6 +46,17 @@ public class WebSocketConnectionManager {
         LOG.debugv("Unregistered WebSocket connection {0}", connectionId);
     }
 
+    public void clear() {
+        sockets.values().forEach(ws -> {
+            try {
+                ws.close();
+            } catch (Exception ignored) {}
+        });
+        connections.clear();
+        sockets.clear();
+        serverInitiatedCloses.clear();
+    }
+
     /**
      * Send a text message to the specified connection.
      *

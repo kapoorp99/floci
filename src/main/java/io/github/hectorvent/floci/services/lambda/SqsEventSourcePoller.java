@@ -89,6 +89,12 @@ public class SqsEventSourcePoller {
         LOG.info("SqsEventSourcePoller shut down, all timers cancelled");
     }
 
+    public void clear() {
+        timerIds.values().forEach(vertx::cancelTimer);
+        timerIds.clear();
+        activePolls.clear();
+    }
+
     public void startPolling(EventSourceMapping esm) {
         if (timerIds.containsKey(esm.getUuid())) {
             return; // already polling

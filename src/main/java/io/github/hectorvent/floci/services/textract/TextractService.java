@@ -26,6 +26,9 @@ public class TextractService {
     public TextractService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
+    public void clear() {
+        asyncJobs.clear();
+    }
     /**
      * DetectDocumentText — returns a stub PAGE + LINE + WORD block hierarchy.
      * Response shape: https://docs.aws.amazon.com/textract/latest/dg/API_DetectDocumentText.html

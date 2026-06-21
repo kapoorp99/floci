@@ -82,6 +82,14 @@ public class PipesPoller {
         LOG.info("PipesPoller shut down");
     }
 
+    public void clear() {
+        timerIds.values().forEach(vertx::cancelTimer);
+        timerIds.clear();
+        activePolls.clear();
+        kinesisIterators.clear();
+        dynamoDbIterators.clear();
+    }
+
     public void startPolling(Pipe pipe) {
         String pipeKey = pipeKey(pipe);
         if (timerIds.containsKey(pipeKey)) {

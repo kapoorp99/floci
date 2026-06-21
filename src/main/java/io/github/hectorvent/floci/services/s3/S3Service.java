@@ -159,6 +159,12 @@ public class S3Service {
         }
     }
 
+    public void clear() {
+        memoryDataStore.clear();
+        memoryMultipartStore.clear();
+        multipartUploads.clear();
+    }
+
     public Bucket createBucket(String bucketName, String region) {
         var existing = bucketStore.get(bucketName);
         if (existing.isPresent()) {

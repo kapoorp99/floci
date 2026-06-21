@@ -88,6 +88,18 @@ public class RdsDataService {
         });
     }
 
+    public void clear() {
+        transactions.forEach((id, tx) -> {
+            synchronized (tx) {
+                if (transactions.remove(id, tx)) {
+                    rollbackQuietly(tx.connection);
+                    closeQuietly(tx.connection);
+                }
+            }
+        });
+        transactions.clear();
+    }
+
     public ObjectNode executeStatement(JsonNode request, String region) {
         rejectUnsupportedOptions(request);
 

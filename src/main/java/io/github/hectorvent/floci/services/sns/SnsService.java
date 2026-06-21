@@ -159,6 +159,11 @@ public class SnsService {
         this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     }
 
+    public void clear() {
+        pushCapture.clear();
+        fifoDeduplicationCache.clear();
+    }
+
     public Topic createTopic(String name, Map<String, String> attributes,
                              Map<String, String> tags, String region) {
         if (name == null || name.isBlank()) {

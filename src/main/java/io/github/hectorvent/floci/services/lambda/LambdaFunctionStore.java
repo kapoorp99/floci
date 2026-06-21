@@ -41,6 +41,10 @@ public class LambdaFunctionStore {
         all.forEach(this::indexFunction);
     }
 
+    public void clear() {
+        urlIdIndex.clear();
+    }
+
     private void indexFunction(LambdaFunction fn) {
         if (fn.getUrlConfig() != null && fn.getUrlConfig().getFunctionUrl() != null) {
             String urlId = extractUrlId(fn.getUrlConfig().getFunctionUrl());

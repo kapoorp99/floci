@@ -48,6 +48,11 @@ public class RuleScheduler {
         LOG.info("RuleScheduler shut down, all timers cancelled");
     }
 
+    public void clear() {
+        scheduleContexts.values().forEach(ctx -> vertx.cancelTimer(ctx.timerId));
+        scheduleContexts.clear();
+    }
+
     public void startScheduler(String ruleArn, String scheduleExpr, 
                                Supplier<ScheduleData> dataSupplier) {
         if (scheduleContexts.containsKey(ruleArn)) {

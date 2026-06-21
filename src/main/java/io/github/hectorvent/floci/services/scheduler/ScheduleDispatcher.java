@@ -81,6 +81,11 @@ public class ScheduleDispatcher {
         executor.shutdownNow();
     }
 
+    public void clear() {
+        lastFireByArn.clear();
+        firedOnceByArn.clear();
+    }
+
     void tickSafely() {
         try {
             tick(Instant.now());

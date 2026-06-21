@@ -62,6 +62,13 @@ public class StepFunctionsService {
         this.objectMapper = objectMapper;
     }
 
+    public void clear() {
+        historyCache.clear();
+        activityQueues.clear();
+        pendingTaskTokens.values().forEach(f -> f.completeExceptionally(new RuntimeException("StepFunctionsService cleared")));
+        pendingTaskTokens.clear();
+    }
+
     // ──────────────────────────── State Machines ────────────────────────────
 
     public StateMachine createStateMachine(String name, String definition, String roleArn, String type, String region, Map<String, String> tags) {

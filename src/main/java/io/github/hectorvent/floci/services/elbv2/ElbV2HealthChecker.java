@@ -71,6 +71,12 @@ public class ElbV2HealthChecker {
         states.remove(tgArn);
     }
 
+    public void clear() {
+        timers.values().forEach(vertx::cancelTimer);
+        timers.clear();
+        states.clear();
+    }
+
     public void addTargets(String tgArn, List<TargetDescription> targets, TargetGroup tg) {
         if (config.services().elbv2().mock()) {
             return;

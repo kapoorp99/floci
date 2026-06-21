@@ -44,6 +44,10 @@ public class ResourceGroupsTaggingService {
         }
     }
 
+    public void clear() {
+        store.clear();
+    }
+
     // ─── GetResources ──────────────────────────────────────────────────────────
 
     public record TagFilter(String key, List<String> values) {}

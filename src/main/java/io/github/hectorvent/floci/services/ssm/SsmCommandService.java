@@ -75,6 +75,11 @@ public class SsmCommandService {
         });
     }
 
+    public void clear() {
+        messageQueues.clear();
+        messageIndex.clear();
+    }
+
     // ── Agent registration ──────────────────────────────────────────────────
 
     public void updateInstanceInformation(JsonNode request, String region) {
