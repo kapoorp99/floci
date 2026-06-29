@@ -4,6 +4,7 @@ import io.github.hectorvent.floci.core.common.AwsException;
 import io.github.hectorvent.floci.services.transcribe.model.TranscriptionJob;
 import io.github.hectorvent.floci.services.transcribe.model.TranscriptionJobSummary;
 import io.github.hectorvent.floci.services.transcribe.model.VocabularyInfo;
+import io.github.hectorvent.floci.core.common.Resettable;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.time.Instant;
@@ -18,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see <a href="https://docs.aws.amazon.com/transcribe/latest/APIReference/Welcome.html">Transcribe API</a>
  */
 @ApplicationScoped
-public class TranscribeService {
+public class TranscribeService implements Resettable {
 
     private final ConcurrentHashMap<String, TranscriptionJob> transcriptionJobs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, VocabularyInfo> vocabularies = new ConcurrentHashMap<>();
