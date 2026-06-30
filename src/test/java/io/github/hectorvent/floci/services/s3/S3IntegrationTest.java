@@ -194,6 +194,7 @@ class S3IntegrationTest {
             .header("x-amz-metadata-directive", "REPLACE")
             .header("x-amz-meta-owner", "team-b")
             .header("x-amz-storage-class", "GLACIER")
+            .header("x-amz-checksum-algorithm", "SHA256")
             .contentType("application/json")
         .when()
             .put("/test-bucket/greeting-copy.txt")
@@ -209,7 +210,18 @@ class S3IntegrationTest {
             .statusCode(200)
             .header("x-amz-meta-owner", equalTo("team-b"))
             .header("x-amz-storage-class", equalTo("GLACIER"))
+            .header("x-amz-checksum-sha256", notNullValue())
             .body(equalTo("Hello World from S3!"));
+            
+        // Verify GetObjectAttributes returns the overridden checksum algorithm
+        given()
+            .header("x-amz-object-attributes", "Checksum")
+        .when()
+            .get("/test-bucket/greeting-copy.txt?attributes")
+        .then()
+            .statusCode(200)
+            .body(containsString("<GetObjectAttributesResponse"))
+            .body(containsString("<ChecksumSHA256>"));
     }
 
     @Test

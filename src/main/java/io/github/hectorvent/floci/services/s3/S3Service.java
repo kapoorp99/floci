@@ -1200,13 +1200,14 @@ public class S3Service {
                                                    Map<String, String> metadata, String storageClass,
                                                    String contentDisposition, String serverSideEncryption, String acl) {
         return initiateMultipartUpload(bucket, key, contentType, metadata, storageClass, contentDisposition,
-                serverSideEncryption, acl, null, null, null);
+                serverSideEncryption, acl, null, null, null, null);
     }
 
     public MultipartUpload initiateMultipartUpload(String bucket, String key, String contentType,
                                                    Map<String, String> metadata, String storageClass,
                                                    String contentDisposition, String serverSideEncryption, String acl,
-                                                   String sseCustomerAlgorithm, String sseCustomerKey, String sseCustomerKeyMd5) {
+                                                   String sseCustomerAlgorithm, String sseCustomerKey, String sseCustomerKeyMd5,
+                                                   String checksumAlgorithm) {
         ensureBucketExists(bucket);
         if (acl != null && !acl.isBlank()) {
             cannedObjectAclXml(acl);
@@ -1226,6 +1227,7 @@ public class S3Service {
             upload.setSseCustomerKeyMd5(customerKey.keyMd5());
         }
         upload.setAcl(acl);
+        upload.setChecksumAlgorithm(checksumAlgorithm);
 
         if (inMemory) {
             memoryMultipartStore.put(upload.getUploadId(), new ConcurrentHashMap<>());
@@ -1272,7 +1274,7 @@ public class S3Service {
 
         String eTag = computeETag(data);
         Part part = new Part(partNumber, eTag, data.length);
-        part.setChecksum(buildChecksum(data, List.of(part), true));
+        part.setChecksum(buildChecksum(data, List.of(part), true, upload.getChecksumAlgorithm()));
         upload.getParts().put(partNumber, part);
         LOG.debugv("Uploaded part {0} for upload {1} ({2} bytes)", partNumber, uploadId, data.length);
         return eTag;
@@ -1350,7 +1352,7 @@ public class S3Service {
             List<Part> completedParts = partNumbers.stream()
                     .map(num -> copyPart(upload.getParts().get(num)))
                     .toList();
-            S3Checksum checksum = buildChecksum(allData, completedParts, true);
+            S3Checksum checksum = buildChecksum(allData, completedParts, true, upload.getChecksumAlgorithm());
             S3Object object = storeObject(bucket, key, allData, upload.getContentType(), upload.getMetadata(),
                     checksum, completedParts,
                     new PutObjectOptions()
@@ -2431,8 +2433,14 @@ public class S3Service {
                 ? effectiveOptions.getReplacementTagging()
                 : source.getTags();
 
+        S3Checksum effectiveChecksum = source.getChecksum();
+        String copyChecksumAlgorithm = effectiveOptions.getChecksumAlgorithm();
+        if (copyChecksumAlgorithm != null) {
+            effectiveChecksum = null;
+        }
+
         S3Object copy = storeObject(destBucket, destKey, source.getData(), effectiveContentType, metadata,
-                source.getChecksum(), source.getParts(),
+                effectiveChecksum, source.getParts(),
                 new PutObjectOptions()
                         .withStorageClass(effectiveStorageClass)
                         .withContentEncoding(effectiveContentEncoding)
@@ -2443,6 +2451,7 @@ public class S3Service {
                         .withSseCustomerKey(effectiveOptions.getSseCustomerKey())
                         .withSseCustomerKeyMd5(effectiveOptions.getSseCustomerKeyMd5())
                         .withAcl(effectiveOptions.getAcl())
+                        .withChecksumAlgorithm(copyChecksumAlgorithm)
                         .withTagging(effectiveTags));
         copy.setETag(source.getETag());
         LOG.debugv("Copied object: {0}/{1} -> {2}/{3}", sourceBucket, sourceKey, destBucket, destKey);

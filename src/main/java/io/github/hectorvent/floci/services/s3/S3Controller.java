@@ -967,7 +967,8 @@ public class S3Controller {
                         httpHeaders.getHeaderString("x-amz-acl"),
                         httpHeaders.getHeaderString("x-amz-server-side-encryption-customer-algorithm"),
                         httpHeaders.getHeaderString("x-amz-server-side-encryption-customer-key"),
-                        httpHeaders.getHeaderString("x-amz-server-side-encryption-customer-key-MD5"));
+                        httpHeaders.getHeaderString("x-amz-server-side-encryption-customer-key-MD5"),
+                        httpHeaders.getHeaderString("x-amz-checksum-algorithm"));
                 String xml = new XmlBuilder()
                         .raw("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
                         .start("InitiateMultipartUploadResult", AwsNamespaces.S3)
@@ -1782,6 +1783,7 @@ public class S3Controller {
                         .withCopySourceSseCustomerAlgorithm(httpHeaders.getHeaderString("x-amz-copy-source-server-side-encryption-customer-algorithm"))
                         .withCopySourceSseCustomerKey(httpHeaders.getHeaderString("x-amz-copy-source-server-side-encryption-customer-key"))
                         .withCopySourceSseCustomerKeyMd5(httpHeaders.getHeaderString("x-amz-copy-source-server-side-encryption-customer-key-MD5"))
+                        .withChecksumAlgorithm(httpHeaders.getHeaderString("x-amz-checksum-algorithm"))
                         .withAcl(cannedAcl));
         String xml = new XmlBuilder()
                 .raw("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
