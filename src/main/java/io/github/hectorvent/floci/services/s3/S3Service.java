@@ -342,9 +342,10 @@ public class S3Service implements Resettable {
             object.getMetadata().putAll(metadata);
         }
         object.setStorageClass(ObjectAttributeName.normalizeStorageClass(effectiveOptions.getStorageClass()));
+        String validatedChecksumAlgorithm = validateAndNormalizeChecksumAlgorithm(effectiveOptions.getChecksumAlgorithm());
         S3Checksum resolvedChecksum = checksum != null ? copyChecksum(checksum)
                 : effectiveOptions.getClientChecksum() != null ? copyChecksum(effectiveOptions.getClientChecksum())
-                : buildChecksum(data, parts, false, effectiveOptions.getChecksumAlgorithm());
+                : buildChecksum(data, parts, false, validatedChecksumAlgorithm);
         object.setChecksum(resolvedChecksum);
         object.setParts(copyParts(parts));
         object.setContentEncoding(effectiveOptions.getContentEncoding());
@@ -1234,7 +1235,7 @@ public class S3Service implements Resettable {
             upload.setSseCustomerKeyMd5(customerKey.keyMd5());
         }
         upload.setAcl(acl);
-        upload.setChecksumAlgorithm(checksumAlgorithm);
+        upload.setChecksumAlgorithm(validateAndNormalizeChecksumAlgorithm(checksumAlgorithm));
 
         if (inMemory) {
             memoryMultipartStore.put(upload.getUploadId(), new ConcurrentHashMap<>());
@@ -2160,6 +2161,17 @@ public class S3Service implements Resettable {
         }
     }
 
+    public static String validateAndNormalizeChecksumAlgorithm(String algorithm) {
+        if (algorithm == null || algorithm.isBlank()) {
+            return null;
+        }
+        String normalized = algorithm.trim().toUpperCase(java.util.Locale.ROOT);
+        if (normalized.equals("CRC32") || normalized.equals("CRC32C") || normalized.equals("SHA1") || normalized.equals("SHA256") || normalized.equals("CRC64NVME")) {
+            return normalized;
+        }
+        throw new AwsException("InvalidArgument", "The checksum algorithm you specified is not supported.", 400);
+    }
+
     private static S3Checksum buildChecksum(byte[] data, List<Part> parts, boolean multipartUpload) {
         return buildChecksum(data, parts, multipartUpload, null);
     }
@@ -2441,7 +2453,7 @@ public class S3Service implements Resettable {
                 : source.getTags();
 
         S3Checksum effectiveChecksum = source.getChecksum();
-        String copyChecksumAlgorithm = effectiveOptions.getChecksumAlgorithm();
+        String copyChecksumAlgorithm = validateAndNormalizeChecksumAlgorithm(effectiveOptions.getChecksumAlgorithm());
         if (copyChecksumAlgorithm != null) {
             effectiveChecksum = null;
         }
