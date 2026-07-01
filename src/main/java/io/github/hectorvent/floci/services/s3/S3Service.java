@@ -2447,7 +2447,7 @@ public class S3Service implements Resettable {
         }
 
         S3Object copy = storeObject(destBucket, destKey, source.getData(), effectiveContentType, metadata,
-                effectiveChecksum, source.getParts(),
+                effectiveChecksum, copyChecksumAlgorithm != null ? null : source.getParts(),
                 new PutObjectOptions()
                         .withStorageClass(effectiveStorageClass)
                         .withContentEncoding(effectiveContentEncoding)
