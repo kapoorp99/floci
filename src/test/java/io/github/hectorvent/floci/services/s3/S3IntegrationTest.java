@@ -2207,6 +2207,32 @@ class S3IntegrationTest {
                 .body(not(containsString("LoggingEnabled")));
     }
 
+    @Test
+    @Order(117)
+    void putObjectRejectsUnsupportedOrInvalidChecksumAlgorithms() {
+        // 1. Valid but unsupported AWS checksum algorithm (SHA512) -> should return 400 InvalidRequest
+        given()
+            .body("hello")
+            .header("x-amz-checksum-algorithm", "SHA512")
+        .when()
+            .put("/test-bucket/checksum-sha512-test.txt")
+        .then()
+            .statusCode(400)
+            .body(containsString("InvalidRequest"))
+            .body(containsString("The checksum algorithm you specified is a valid AWS checksum algorithm, but is not currently supported by Floci"));
+
+        // 2. Completely invalid checksum algorithm (FOO) -> should return 400 InvalidArgument
+        given()
+            .body("hello")
+            .header("x-amz-checksum-algorithm", "FOO")
+        .when()
+            .put("/test-bucket/checksum-foo-test.txt")
+        .then()
+            .statusCode(400)
+            .body(containsString("InvalidArgument"))
+            .body(containsString("The checksum algorithm you specified is not supported."));
+    }
+
     private static String customerKeyMd5(String customerKey) {
         try {
             byte[] md5 = MessageDigest.getInstance("MD5").digest(Base64.getDecoder().decode(customerKey));

@@ -2169,6 +2169,9 @@ public class S3Service implements Resettable {
         if (normalized.equals("CRC32") || normalized.equals("CRC32C") || normalized.equals("SHA1") || normalized.equals("SHA256") || normalized.equals("CRC64NVME")) {
             return normalized;
         }
+        if (normalized.equals("SHA512") || normalized.equals("MD5") || normalized.equals("XXHASH3") || normalized.equals("XXHASH64") || normalized.equals("XXHASH128")) {
+            throw new AwsException("InvalidRequest", "The checksum algorithm you specified is a valid AWS checksum algorithm, but is not currently supported by Floci (supported: CRC32, CRC32C, CRC64NVME, SHA1, SHA256).", 400);
+        }
         throw new AwsException("InvalidArgument", "The checksum algorithm you specified is not supported.", 400);
     }
 
