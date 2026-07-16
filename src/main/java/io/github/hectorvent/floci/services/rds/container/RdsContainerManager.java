@@ -257,11 +257,9 @@ public class RdsContainerManager {
     public String createPostgresSnapshot(String containerId, String masterUsername) {
         String effectiveUser = (masterUsername != null && !masterUsername.isBlank()) ? masterUsername : "postgres";
         String[] cmd = {
-                "pg_dump",
+                "pg_dumpall",
                 "-U", effectiveUser,
-                "-d", "postgres",
-                "--clean",
-                "--if-exists"
+                "--clean"
         };
         try {
             ContainerExecResult result = execInContainer(containerId, cmd, 120);
