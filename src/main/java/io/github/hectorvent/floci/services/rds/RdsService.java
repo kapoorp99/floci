@@ -381,6 +381,10 @@ public class RdsService implements Resettable {
     }
 
     public DbSnapshot createDbSnapshot(String snapshotId, String instanceId) {
+        if (snapshots.get(snapshotId).isPresent()) {
+            throw new AwsException("DBSnapshotAlreadyExists", "DBSnapshot " + snapshotId + " already exists.", 400);
+        }
+
         DbInstance instance = instances.get(instanceId)
                 .orElseThrow(() -> new AwsException("DBInstanceNotFound", "DBInstance " + instanceId + " not found.", 404));
 
@@ -394,7 +398,10 @@ public class RdsService implements Resettable {
                 instance.getCreatedAt(), instance.getEndpoint() != null ? instance.getEndpoint().port() : instance.getProxyPort(),
                 instance.isIamDatabaseAuthenticationEnabled(), instance.getDbiResourceId());
 
-        String sqlDump = containerManager.createPostgresSnapshot(instance.getContainerId(), instance.getMasterUsername());
+        String sqlDump = "";
+        if (!config.services().rds().mock()) {
+            sqlDump = containerManager.createPostgresSnapshot(instance.getContainerId(), instance.getMasterUsername());
+        }
         snapshotData.put(snapshotId, sqlDump);
         snapshots.put(snapshotId, snapshot);
 
@@ -416,7 +423,9 @@ public class RdsService implements Resettable {
                 null, targetClass, snapshot.getAllocatedStorage(), snapshot.isIamDatabaseAuthenticationEnabled(),
                 null, dbSubnetGroupName, null, availabilityZone, multiAz, false, null, tags, vpcSecurityGroupIds);
 
-        containerManager.restorePostgresSnapshot(instance.getContainerId(), instance.getMasterUsername(), sqlDump);
+        if (!config.services().rds().mock()) {
+            containerManager.restorePostgresSnapshot(instance.getContainerId(), instance.getMasterUsername(), sqlDump);
+        }
 
         return instance;
     }
