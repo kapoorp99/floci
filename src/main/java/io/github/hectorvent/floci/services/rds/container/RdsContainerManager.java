@@ -369,7 +369,7 @@ public class RdsContainerManager {
         try {
             boolean completed = latch.await(timeoutSeconds, TimeUnit.SECONDS);
             if (!completed) {
-                return new ContainerExecResult(-1, "Timed out after " + timeoutSeconds + "s");
+                return new ContainerExecResult(-1, "Timed out after " + timeoutSeconds + "s", "");
             }
             Long exitCode = lifecycleManager.getDockerClient().inspectExecCmd(execId).exec().getExitCodeLong();
             return new ContainerExecResult(
