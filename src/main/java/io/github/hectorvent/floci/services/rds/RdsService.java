@@ -432,7 +432,9 @@ public class RdsService implements Resettable {
                 } catch (Exception cleanupError) {
                     e.addSuppressed(cleanupError);
                 }
-                throw e;
+                AwsException awsEx = new AwsException("InvalidDBSnapshotStateFault", "Failed to restore snapshot: " + e.getMessage(), 400);
+                awsEx.initCause(e);
+                throw awsEx;
             }
         }
 
